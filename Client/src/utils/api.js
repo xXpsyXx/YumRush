@@ -26,12 +26,3 @@ export const preloadData = async () => {
     return null;
   }
 };
-      JSON.stringify({
-        data: restaurants,
-        timestamp: Date.now(),
-      })
-    );
-  } catch (error) {
-    console.warn("Data preload failed:", error);
-  }
-};
