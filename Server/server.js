@@ -20,13 +20,20 @@ app.use(
     origin: (origin, callback) => {
       const allowedOrigins = [
         "http://localhost:5173", // Local development
-        process.env.FRONTEND_URL, // Vercel production
-        "https://yum-rush-gbd7ii88j-xxpsyxxs-projects.vercel.app", // Your Vercel domain
-        "https://yum-rush.vercel.app", // In case you're using the default Vercel domain
+        process.env.FRONTEND_URL, // Primary Vercel URL
+        process.env.PREVIEW_URL, // Preview deployments URL
       ].filter(Boolean); // Remove any undefined/empty values
 
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
+
+      // Allow any vercel.app subdomain during development/preview
+      if (
+        process.env.NODE_ENV !== "production" &&
+        origin.endsWith(".vercel.app")
+      ) {
+        return callback(null, true);
+      }
 
       // Check if the origin is allowed or matches a Vercel deployment URL pattern
       if (
