@@ -94,12 +94,16 @@ const Header = () => {
             // Use configured geocoder base URL if provided, otherwise default to
             // OpenStreetMap Nominatim reverse endpoint.
             const geocoderBase =
-              (import.meta && import.meta.env && import.meta.env.VITE_GEOCODER_URL) ||
+              (import.meta &&
+                import.meta.env &&
+                import.meta.env.VITE_GEOCODER_URL) ||
               "https://nominatim.openstreetmap.org/reverse?format=jsonv2";
             // Append lat/lon correctly whether the base already contains query params
             const separator = geocoderBase.includes("?") ? "&" : "?";
             const url = `${geocoderBase}${separator}lat=${latitude}&lon=${longitude}`;
-            const res = await fetch(url, { headers: { Accept: "application/json" } });
+            const res = await fetch(url, {
+              headers: { Accept: "application/json" },
+            });
             if (res.ok) {
               const json = await res.json();
               const city =

@@ -9,7 +9,7 @@ import { connectMongo } from "./db/connection.js";
 import authRouter from "./auth/auth.routes.js";
 import serverless from "serverless-http";
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,9 +17,21 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(
   cors({
-    origin: [
-      process.env.FRONTEND_URL, // Your Vercel deployment
-    ],
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:5173", // Local development
+        process.env.FRONTEND_URL, // Vercel production
+      ].filter(Boolean); // Remove any undefined/empty values
+
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
