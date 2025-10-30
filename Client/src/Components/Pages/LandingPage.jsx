@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import apiFetch, { asset } from "../../lib/api";
 import { Link, useSearchParams } from "react-router-dom";
+import { RestaurantListSkeleton } from "../UI/RestaurantCardSkeleton";
 
 function LandingPage() {
   const [searchParams] = useSearchParams();
@@ -13,6 +14,19 @@ function LandingPage() {
   useEffect(() => {
     setLoading(true);
     setError(null);
+
+    // Try to get cached data first
+    const cached = localStorage.getItem("restaurantsCache");
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached);
+      // Use cache if it's less than 5 minutes old
+      if (Date.now() - timestamp < 5 * 60 * 1000) {
+        setRestaurants(data);
+        setLoading(false);
+      }
+    }
+
+    // Fetch fresh data
     apiFetch("/api/restaurants")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch restaurants");
@@ -21,6 +35,14 @@ function LandingPage() {
       .then((data) => {
         setRestaurants(Array.isArray(data) ? data : []);
         setLoading(false);
+        // Update cache
+        localStorage.setItem(
+          "restaurantsCache",
+          JSON.stringify({
+            data,
+            timestamp: Date.now(),
+          })
+        );
       })
       .catch((err) => {
         setError(err.message);

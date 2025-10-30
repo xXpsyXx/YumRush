@@ -15,6 +15,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Health check endpoint for keeping the backend warm
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -63,6 +69,22 @@ app.get("/api/menus", (req, res) => {
 });
 
 app.get("/api/restaurants", (req, res) => {
+  // Set caching headers
+  res.set("Cache-Control", "public, max-age=300"); // Cache for 5 minutes
+  res.set(
+    "ETag",
+    require("crypto")
+      .createHash("md5")
+      .update(JSON.stringify(restaurants))
+      .digest("hex")
+  );
+
+  // Check if client has a valid cached version
+  const clientETag = req.get("If-None-Match");
+  if (clientETag === res.get("ETag")) {
+    return res.status(304).send(); // Not Modified
+  }
+
   res.json(restaurants);
 });
 
