@@ -21,12 +21,19 @@ app.use(
       const allowedOrigins = [
         "http://localhost:5173", // Local development
         process.env.FRONTEND_URL, // Vercel production
+        "https://yum-rush-gbd7ii88j-xxpsyxxs-projects.vercel.app", // Your Vercel domain
+        "https://yum-rush.vercel.app", // In case you're using the default Vercel domain
       ].filter(Boolean); // Remove any undefined/empty values
 
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      // Check if the origin is allowed or matches a Vercel deployment URL pattern
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        origin.endsWith(".vercel.app") ||
+        !origin
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
