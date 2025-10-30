@@ -147,11 +147,21 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-// Warm up the backend as soon as the JS loads
-warmupBackend();
+// Initialize the app
+async function initializeApp() {
+  try {
+    // First warm up the backend
+    await warmupBackend();
 
-// Start preloading data
-preloadData();
+    // Then start preloading data
+    await preloadData();
+  } catch (error) {
+    console.warn("Initialization error:", error);
+  }
+}
+
+// Start initialization immediately
+initializeApp();
 
 // Add performance monitoring
 const reportWebVitals = ({ id, name, value }) => {

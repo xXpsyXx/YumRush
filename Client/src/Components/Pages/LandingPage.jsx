@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import apiFetch, { asset } from "../../lib/api";
 import { Link, useSearchParams } from "react-router-dom";
 import { RestaurantListSkeleton } from "../UI/RestaurantCardSkeleton";
+import { getRestaurants } from "../../utils/apiClient";
+import { asset } from "../../lib/api";
 
 function LandingPage() {
   const [searchParams] = useSearchParams();
@@ -12,42 +13,21 @@ function LandingPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-
-    // Try to get cached data first
-    const cached = localStorage.getItem("restaurantsCache");
-    if (cached) {
-      const { data, timestamp } = JSON.parse(cached);
-      // Use cache if it's less than 5 minutes old
-      if (Date.now() - timestamp < 5 * 60 * 1000) {
-        setRestaurants(data);
+    async function loadRestaurants() {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getRestaurants();
+        setRestaurants(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setError(err.message);
+        console.error("Failed to fetch restaurants:", err);
+      } finally {
         setLoading(false);
       }
     }
 
-    // Fetch fresh data
-    apiFetch("/api/restaurants")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch restaurants");
-        return res.json();
-      })
-      .then((data) => {
-        setRestaurants(Array.isArray(data) ? data : []);
-        setLoading(false);
-        // Update cache
-        localStorage.setItem(
-          "restaurantsCache",
-          JSON.stringify({
-            data,
-            timestamp: Date.now(),
-          })
-        );
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
+    loadRestaurants();
   }, []);
 
   const filtered = useMemo(() => {
