@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import apiFetch, { asset } from "../../lib/api";
 
 function RestaurantPage() {
   const location = useLocation();
@@ -76,7 +77,7 @@ function RestaurantPage() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch("/api/menus") // relative path; Vite will proxy in dev
+    apiFetch("/api/menus")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch menu data");
         return res.json();
@@ -198,7 +199,7 @@ function RestaurantPage() {
                 )}
               </div>
               <img
-                src={d.image}
+                src={asset(d.image)}
                 alt={d.title}
                 className="h-24 w-28 object-cover rounded-md shadow-sm ml-2"
               />

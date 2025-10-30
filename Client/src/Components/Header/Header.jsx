@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { asset } from "../../lib/api";
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -90,10 +91,15 @@ const Header = () => {
           const { latitude, longitude } = pos.coords;
           let label = `${latitude.toFixed(3)}, ${longitude.toFixed(3)}`;
           try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
-              { headers: { Accept: "application/json" } }
-            );
+            // Use configured geocoder base URL if provided, otherwise default to
+            // OpenStreetMap Nominatim reverse endpoint.
+            const geocoderBase =
+              (import.meta && import.meta.env && import.meta.env.VITE_GEOCODER_URL) ||
+              "https://nominatim.openstreetmap.org/reverse?format=jsonv2";
+            // Append lat/lon correctly whether the base already contains query params
+            const separator = geocoderBase.includes("?") ? "&" : "?";
+            const url = `${geocoderBase}${separator}lat=${latitude}&lon=${longitude}`;
+            const res = await fetch(url, { headers: { Accept: "application/json" } });
             if (res.ok) {
               const json = await res.json();
               const city =
@@ -105,7 +111,9 @@ const Header = () => {
               if (city || state)
                 label = [city, state].filter(Boolean).join(", ");
             }
-          } catch {}
+          } catch (e) {
+            // ignore geocoding errors silently
+          }
           const data = { lat: latitude, lon: longitude, label };
           localStorage.setItem("location", JSON.stringify(data));
           setLocationLabel(label);
@@ -174,7 +182,7 @@ const Header = () => {
 
           <a href="/" className="group inline-flex items-center gap-2">
             <img
-              src="/images/YumRush.webp"
+              src={asset("/images/YumRush.webp")}
               alt="YumRush"
               className="h-9 w-9 object-contain"
             />

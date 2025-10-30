@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import apiFetch from "../../lib/api";
 import { useNavigate } from "react-router-dom";
 
 function Account() {
@@ -34,7 +35,7 @@ function Account() {
     setMessage("");
     setError("");
     try {
-      const res = await fetch("/api/auth/me", {
+      const res = await apiFetch("/api/auth/me", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

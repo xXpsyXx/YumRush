@@ -15,7 +15,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      process.env.FRONTEND_URL, // Your Vercel deployment
+    ],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Serve static images under /images
@@ -42,13 +49,7 @@ await connectMongo();
 // --- Auth routes ---
 app.use("/api/auth", authRouter);
 
-// When running locally as a standalone server, set RUN_SERVER=true
-if (process.env.RUN_SERVER === "true") {
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-}
-
-// Export serverless handler for Vercel and other platforms
-export const handler = serverless(app);
-export default app;
+// Start Express server normally on Railway
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});

@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
+import apiFetch from "../../lib/api";
 
 function CheckoutSuccessPage() {
   useEffect(() => {
@@ -30,7 +31,7 @@ function CheckoutSuccessPage() {
           }
           const items = Array.from(map.values());
           const total = items.reduce((s, x) => s + x.price * x.qty, 0);
-          await fetch("/api/auth/orders", {
+          await apiFetch("/api/auth/orders", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import apiFetch, { asset } from "../../lib/api";
 
 function Orders() {
   const [orders, setOrders] = useState([]);
@@ -14,7 +15,7 @@ function Orders() {
           setLoading(false);
           return;
         }
-        const res = await fetch("/api/auth/orders", {
+        const res = await apiFetch("/api/auth/orders", {
           headers: { Authorization: `Bearer ${auth.token}` },
         });
         if (!res.ok) throw new Error("Failed to fetch orders");
@@ -65,7 +66,7 @@ function Orders() {
                     <div className="flex items-center gap-2">
                       {it.image ? (
                         <img
-                          src={it.image}
+                          src={asset(it.image)}
                           alt={it.title}
                           className="h-10 w-12 object-cover rounded"
                         />

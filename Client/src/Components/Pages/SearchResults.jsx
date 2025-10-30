@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import apiFetch, { asset } from "../../lib/api";
 import { Link, useSearchParams } from "react-router-dom";
 
 function SearchResults() {
@@ -17,8 +18,8 @@ function SearchResults() {
         setLoading(true);
         setError(null);
         const [rRes, mRes] = await Promise.all([
-          fetch("/api/restaurants"),
-          fetch("/api/menus"),
+          apiFetch("/api/restaurants"),
+          apiFetch("/api/menus"),
         ]);
         if (!rRes.ok || !mRes.ok) throw new Error("Failed to fetch data");
         const [rData, mData] = await Promise.all([rRes.json(), mRes.json()]);
@@ -103,7 +104,7 @@ function SearchResults() {
                 <div className="h-24 w-32 bg-gray-100 rounded overflow-hidden">
                   {r.image ? (
                     <img
-                      src={r.image}
+                      src={asset(r.image)}
                       alt={r.title}
                       className="h-full w-full object-cover"
                     />

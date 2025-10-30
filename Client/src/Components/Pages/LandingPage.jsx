@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import apiFetch, { asset } from "../../lib/api";
 import { Link, useSearchParams } from "react-router-dom";
 
 function LandingPage() {
@@ -12,7 +13,7 @@ function LandingPage() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch("/api/restaurants")
+    apiFetch("/api/restaurants")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch restaurants");
         return res.json();
@@ -186,7 +187,7 @@ function LandingPage() {
                   <div className="aspect-video w-full bg-gray-100">
                     {r.image ? (
                       <img
-                        src={r.image}
+                        src={asset(r.image)}
                         alt={r.title}
                         className="h-full w-full object-cover"
                       />

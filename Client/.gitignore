@@ -23,5 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
+.env.production
 
 eslint.config.js
+
+.env.development
