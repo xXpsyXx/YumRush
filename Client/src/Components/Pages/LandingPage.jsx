@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { RestaurantListSkeleton } from "../UI/RestaurantCardSkeleton";
-import { getRestaurants } from "../../utils/apiClient";
-import { asset } from "../../lib/api";
+import { getRestaurants } from "../../utils/api";
 
 function LandingPage() {
   const [searchParams] = useSearchParams();

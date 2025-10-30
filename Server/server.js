@@ -23,36 +23,9 @@ app.get("/health", (req, res) => {
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      const allowedOrigins = [
-        "http://localhost:5173", // Local development
-        process.env.FRONTEND_URL, // Primary Vercel URL
-        process.env.PREVIEW_URL, // Preview deployments URL
-      ].filter(Boolean); // Remove any undefined/empty values
-
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-
-      // Allow any vercel.app subdomain during development/preview
-      if (
-        process.env.NODE_ENV !== "production" &&
-        origin.endsWith(".vercel.app")
-      ) {
-        return callback(null, true);
-      }
-
-      // Check if the origin is allowed or matches a Vercel deployment URL pattern
-      if (
-        allowedOrigins.indexOf(origin) !== -1 ||
-        origin.endsWith(".vercel.app") ||
-        !origin
-      ) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
@@ -69,23 +42,12 @@ app.get("/api/menus", (req, res) => {
 });
 
 app.get("/api/restaurants", (req, res) => {
-  // Set caching headers
-  res.set("Cache-Control", "public, max-age=300"); // Cache for 5 minutes
-  res.set(
-    "ETag",
-    require("crypto")
-      .createHash("md5")
-      .update(JSON.stringify(restaurants))
-      .digest("hex")
-  );
-
-  // Check if client has a valid cached version
-  const clientETag = req.get("If-None-Match");
-  if (clientETag === res.get("ETag")) {
-    return res.status(304).send(); // Not Modified
+  try {
+    res.json(restaurants);
+  } catch (error) {
+    console.error("Error sending restaurants:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  res.json(restaurants);
 });
 
 // --- Mongo connection ---
