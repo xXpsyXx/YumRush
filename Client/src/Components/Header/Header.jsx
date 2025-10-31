@@ -415,7 +415,7 @@ const Header = () => {
       </header>
 
       {showLocationModal && (
-        <div className="fixed inset-0 z-1000 grid place-items-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-[1000] grid place-items-center bg-black/40 p-4">
           <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-4 shadow-lg">
             <div className="mb-3 text-base font-semibold text-gray-900">
               Enter your location
