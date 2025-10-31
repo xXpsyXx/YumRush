@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import apiFetch from "../../lib/api";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { API_BASE } from "../../lib/api";
 
 function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -14,17 +15,39 @@ function Login() {
     setError("");
     setLoading(true);
     try {
-      const res = await apiFetch("/api/auth/login", {
+      // Use regular fetch for POST requests to avoid cache issues
+      const url = API_BASE ? `${API_BASE}/api/auth/login` : "/api/auth/login";
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        // If response isn't JSON, use status text
+        throw new Error(res.statusText || "Login failed");
+      }
+
+      if (!res.ok) {
+        // Use the error message from the server
+        console.log("Login failed:", {
+          status: res.status,
+          statusText: res.statusText,
+          serverMessage: data.message,
+        });
+        throw new Error(data.message || "Login failed");
+      }
+
       localStorage.setItem("auth", JSON.stringify(data));
-      navigate("/");
+      // Redirect to the original destination or home
+      const redirectTo = searchParams.get("redirect") || "/";
+      navigate(redirectTo);
     } catch (err) {
-      setError(err.message);
+      // Display the error message from the server
+      setError(err.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }

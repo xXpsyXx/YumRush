@@ -3,11 +3,11 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import compression from "compression";
 import { menus } from "./Views/Data/menu.js";
 import { restaurants } from "./Views/Data/restaurants.js";
 import { connectMongo } from "./db/connection.js";
 import authRouter from "./auth/auth.routes.js";
-import serverless from "serverless-http";
 
 const PORT = process.env.PORT;
 
@@ -15,6 +15,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Enable compression for all responses (gzip)
+app.use(compression({ level: 6 }));
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -51,18 +55,38 @@ app.use(
 );
 app.use(express.json());
 
-// Serve static images under /images
-app.use("/images", express.static(path.join(__dirname, "public", "images")));
+// Serve static images under /images with aggressive caching
+const imagesStatic = express.static(path.join(__dirname, "public", "images"), {
+  maxAge: "1y", // Cache for 1 year
+  etag: true,
+  lastModified: true,
+  immutable: true,
+});
+
+app.use(
+  "/images",
+  (req, res, next) => {
+    // Set cache headers for images
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    next();
+  },
+  imagesStatic
+);
 
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
 
 app.get("/api/menus", (req, res) => {
+  // Cache API responses for 5 minutes
+  res.setHeader("Cache-Control", "public, max-age=300");
   res.json(menus);
 });
 
 app.get("/api/restaurants", (req, res) => {
+  // Cache API responses for 5 minutes
+  res.setHeader("Cache-Control", "public, max-age=300");
   res.json(restaurants);
 });
 
@@ -76,6 +100,11 @@ await connectMongo();
 app.use("/api/auth", authRouter);
 
 // Start Express server normally on Railway
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+if (PORT) {
+  app.listen(PORT, () => {
+    console.log(`✅ Server running on port ${PORT}`);
+  });
+}
+
+// Export handler for Vercel serverless
+export const handler = app;

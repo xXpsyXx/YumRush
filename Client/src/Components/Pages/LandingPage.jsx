@@ -6,12 +6,28 @@ function LandingPage() {
   const [searchParams] = useSearchParams();
   const q = (searchParams.get("q") || "").trim();
 
-  const [restaurants, setRestaurants] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Initialize with cached data if available for instant loading
+  const [restaurants, setRestaurants] = useState(() => {
+    try {
+      const cached = JSON.parse(
+        localStorage.getItem("api_cache_/api/restaurants") || "null"
+      );
+      if (cached && cached.data) {
+        return Array.isArray(cached.data) ? cached.data : [];
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(restaurants.length === 0);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
+    // Only show loading if we don't have cached data
+    if (restaurants.length === 0) {
+      setLoading(true);
+    }
     setError(null);
     apiFetch("/api/restaurants")
       .then((res) => {
@@ -190,6 +206,8 @@ function LandingPage() {
                         src={asset(r.image)}
                         alt={r.title}
                         className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : null}
                   </div>

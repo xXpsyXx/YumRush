@@ -6,17 +6,43 @@ function SearchResults() {
   const [searchParams] = useSearchParams();
   const q = (searchParams.get("q") || "").trim();
 
-  const [restaurants, setRestaurants] = useState([]);
-  const [menus, setMenus] = useState({});
-  const [loading, setLoading] = useState(true);
+  // Initialize with cached data if available
+  const [restaurants, setRestaurants] = useState(() => {
+    try {
+      const cached = JSON.parse(
+        localStorage.getItem("api_cache_/api/restaurants") || "null"
+      );
+      return cached && cached.data
+        ? Array.isArray(cached.data)
+          ? cached.data
+          : []
+        : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  const [menus, setMenus] = useState(() => {
+    try {
+      const cached = JSON.parse(
+        localStorage.getItem("api_cache_/api/menus") || "null"
+      );
+      return cached && cached.data ? cached.data || {} : {};
+    } catch (e) {
+      return {};
+    }
+  });
+  const [loading, setLoading] = useState(restaurants.length === 0);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      try {
+      // Only show loading if we don't have cached data
+      if (restaurants.length === 0) {
         setLoading(true);
-        setError(null);
+      }
+      setError(null);
+      try {
         const [rRes, mRes] = await Promise.all([
           apiFetch("/api/restaurants"),
           apiFetch("/api/menus"),
@@ -107,6 +133,8 @@ function SearchResults() {
                       src={asset(r.image)}
                       alt={r.title}
                       className="h-full w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : null}
                 </div>

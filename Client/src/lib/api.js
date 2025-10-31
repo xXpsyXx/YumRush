@@ -13,10 +13,65 @@ function normalizeBase(base) {
 
 export const API_BASE = normalizeBase(VITE_API_URL);
 
-export default function apiFetch(path, options) {
+// Enhanced apiFetch with caching support
+export default async function apiFetch(path, options = {}) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const url = API_BASE ? `${API_BASE}${normalizedPath}` : normalizedPath;
-  return fetch(url, options);
+
+  // Only cache GET requests
+  const isGetRequest = !options.method || options.method === "GET";
+
+  // Import cache dynamically to avoid circular dependencies
+  const { cache } = await import("./cache.js");
+
+  // Check cache first for GET requests (skip cache if options.skipCache is true)
+  if (isGetRequest && !options.skipCache) {
+    const cached = cache.get(url);
+    if (cached) {
+      // Return cached response immediately, then fetch fresh data in background
+      setTimeout(() => {
+        fetch(url, options)
+          .then((freshRes) => {
+            if (freshRes.ok) {
+              return freshRes.json();
+            }
+            return null;
+          })
+          .then((freshData) => {
+            if (freshData) {
+              cache.set(url, freshData);
+            }
+          })
+          .catch(() => {
+            // Ignore background fetch errors
+          });
+      }, 0);
+
+      // Return cached data immediately
+      return Promise.resolve(
+        new Response(JSON.stringify(cached), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+    }
+  }
+
+  // No cache, fetch normally
+  const res = await fetch(url, options);
+
+  // Cache successful GET responses (skip caching if options.skipCache is true)
+  if (isGetRequest && res.ok && !options.skipCache) {
+    const clonedRes = res.clone();
+    try {
+      const data = await clonedRes.json();
+      cache.set(url, data);
+    } catch (e) {
+      // Not JSON, don't cache
+    }
+  }
+
+  return res;
 }
 
 // Resolve asset URLs (images, static files). If the path is absolute (starts with http)

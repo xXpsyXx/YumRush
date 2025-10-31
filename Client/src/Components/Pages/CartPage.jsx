@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 function CartPage() {
@@ -10,6 +10,28 @@ function CartPage() {
       return [];
     }
   });
+
+  // Check authentication status
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = () => {
+      try {
+        const auth = JSON.parse(localStorage.getItem("auth") || "null");
+        setIsAuthenticated(Boolean(auth?.token));
+      } catch {
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
+    // Listen for auth changes
+    const interval = setInterval(checkAuth, 500);
+    window.addEventListener("storage", checkAuth);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", checkAuth);
+    };
+  }, []);
 
   const totalPrice = useMemo(
     () => cart.reduce((sum, it) => sum + (Number(it.price) || 0), 0),
@@ -75,6 +97,8 @@ function CartPage() {
               src={item.image}
               alt={item.title}
               className="h-20 w-20 object-cover rounded-md"
+              loading="lazy"
+              decoding="async"
             />
             <div className="flex-1">
               <div className="font-semibold text-gray-900">{item.title}</div>
@@ -113,12 +137,29 @@ function CartPage() {
           <span>₹{totalPrice}</span>
         </div>
       </div>
-      <Link
-        to="/checkout"
-        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 font-semibold text-lg rounded-md transition block text-center"
-      >
-        Pay ₹{totalPrice}
-      </Link>
+      {isAuthenticated ? (
+        <Link
+          to="/checkout"
+          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 font-semibold text-lg rounded-md transition block text-center"
+        >
+          Pay ₹{totalPrice}
+        </Link>
+      ) : (
+        <div className="space-y-3">
+          <div className="w-full bg-gray-400 text-white px-6 py-3 font-semibold text-lg rounded-md text-center cursor-not-allowed">
+            Pay ₹{totalPrice}
+          </div>
+          <p className="text-center text-sm text-red-600 mb-2">
+            Please login to proceed with checkout
+          </p>
+          <Link
+            to="/login?redirect=/cart"
+            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 font-semibold text-lg rounded-md transition block text-center"
+          >
+            Login to Checkout
+          </Link>
+        </div>
+      )}
       <Link
         to="/"
         className="block mt-4 bg-white border border-emerald-500 text-emerald-600 hover:bg-emerald-50 rounded-md px-6 py-2 font-medium text-center transition"

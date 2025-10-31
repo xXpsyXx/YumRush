@@ -189,6 +189,8 @@ const Header = () => {
               src={asset("/images/YumRush.webp")}
               alt="YumRush"
               className="h-9 w-9 object-contain"
+              loading="eager"
+              decoding="async"
             />
             <span className="text-lg font-semibold tracking-tight text-gray-900">
               YumRush

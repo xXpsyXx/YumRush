@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import apiFetch, { asset } from "../../lib/api";
 
 function Orders() {
+  const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -15,8 +17,10 @@ function Orders() {
           setLoading(false);
           return;
         }
+        // Fetch fresh orders (bypass cache to show latest orders)
         const res = await apiFetch("/api/auth/orders", {
           headers: { Authorization: `Bearer ${auth.token}` },
+          skipCache: true, // Don't use cache for orders - always fetch fresh
         });
         if (!res.ok) throw new Error("Failed to fetch orders");
         const data = await res.json();
@@ -27,7 +31,8 @@ function Orders() {
         setLoading(false);
       }
     })();
-  }, []);
+    // Re-fetch when navigating to orders page (e.g., after checkout)
+  }, [location.pathname]);
 
   if (loading)
     return <main className="max-w-2xl mx-auto py-10 px-4">Loading…</main>;
@@ -69,6 +74,8 @@ function Orders() {
                           src={asset(it.image)}
                           alt={it.title}
                           className="h-10 w-12 object-cover rounded"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : null}
                       <span>{it.title}</span>

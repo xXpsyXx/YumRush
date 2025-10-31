@@ -7,11 +7,12 @@ function RestaurantPage() {
   const { id } = useParams();
 
   const [menus, setMenus] = useState(null);
+  const [restaurants, setRestaurants] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Cart, feedback and related state, as before ...
   const [feedback, setFeedback] = useState({});
+  const [removedFeedback, setRemovedFeedback] = useState({});
   const [cart, setCart] = useState(() => {
     const fromLS = localStorage.getItem("cart");
     return fromLS ? JSON.parse(fromLS) : [];
@@ -41,12 +42,30 @@ function RestaurantPage() {
   };
 
   const removeOne = (itemId) => {
+    const currentQuantity = getItemQuantity(itemId);
     const index = cart.findIndex((ci) => ci.id === itemId);
     if (index === -1) return;
-    const newCart = [...cart.slice(0, index), ...cart.slice(index + 1)];
-    setCart(newCart);
-    localStorage.setItem("cart", JSON.stringify(newCart));
-    setCartCount(newCart.length);
+
+    // If it's the last quantity (1), show "Removed" feedback in red
+    if (currentQuantity === 1) {
+      // Set feedback first to show "Removed"
+      setRemovedFeedback((f) => ({ ...f, [itemId]: true }));
+      // Remove the item immediately
+      const newCart = [...cart.slice(0, index), ...cart.slice(index + 1)];
+      setCart(newCart);
+      localStorage.setItem("cart", JSON.stringify(newCart));
+      setCartCount(newCart.length);
+      // Clear the feedback after 1.1 seconds
+      setTimeout(() => {
+        setRemovedFeedback((f) => ({ ...f, [itemId]: false }));
+      }, 1100);
+    } else {
+      // If quantity > 1, just remove normally
+      const newCart = [...cart.slice(0, index), ...cart.slice(index + 1)];
+      setCart(newCart);
+      localStorage.setItem("cart", JSON.stringify(newCart));
+      setCartCount(newCart.length);
+    }
   };
 
   const totalPrice = useMemo(
@@ -73,17 +92,38 @@ function RestaurantPage() {
     return () => window.removeEventListener("storage", updateCount);
   }, [location.pathname]);
 
-  // Fetch menu data from backend API
+  // Fetch menu data from backend API with cache support
   useEffect(() => {
-    setLoading(true);
+    // Check cache first for instant loading
+    try {
+      const cached = JSON.parse(
+        localStorage.getItem("api_cache_/api/menus") || "null"
+      );
+      if (cached && cached.data) {
+        setMenus(cached.data);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+    } catch (e) {
+      setLoading(true);
+    }
+
     setError(null);
-    apiFetch("/api/menus")
-      .then((res) => {
+    // Fetch both menus and restaurants in parallel
+    Promise.all([
+      apiFetch("/api/menus").then((res) => {
         if (!res.ok) throw new Error("Failed to fetch menu data");
         return res.json();
-      })
-      .then((data) => {
-        setMenus(data);
+      }),
+      apiFetch("/api/restaurants").then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch restaurants");
+        return res.json();
+      }),
+    ])
+      .then(([menuData, restaurantData]) => {
+        setMenus(menuData);
+        setRestaurants(Array.isArray(restaurantData) ? restaurantData : []);
         setLoading(false);
       })
       .catch((err) => {
@@ -119,15 +159,25 @@ function RestaurantPage() {
     );
   }
 
-  const restData = menus[id] || menus[1];
-  const sampleMenu = restData.menu;
+  const restaurant =
+    restaurants?.find((r) => r.id === Number(id)) || restaurants?.[0];
+  const menuData = menus?.[id] || menus?.[1];
+  const sampleMenu = menuData?.menu || [];
+
+  if (!restaurant || !menuData) {
+    return (
+      <main className="min-h-screen flex items-center justify-center text-xl text-red-600">
+        Restaurant not found
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-2xl mx-auto py-10 px-4 min-h-screen flex flex-col pb-36">
       {/* Restaurant Info */}
       <div className="mb-8 pb-6 border-b border-gray-100">
-        <h1 className="text-3xl font-bold text-gray-900">{restData.title}</h1>
-        <p className="text-gray-500 mt-1">{restData.info}</p>
+        <h1 className="text-3xl font-bold text-gray-900">{restaurant.title}</h1>
+        <p className="text-gray-500 mt-1">{restaurant.info}</p>
       </div>
       {/* Menu List */}
       <section>
@@ -157,7 +207,14 @@ function RestaurantPage() {
                     )}
                   </div>
                 </div>
-                {getItemQuantity(d.id) > 0 ? (
+                {removedFeedback[d.id] ? (
+                  <button
+                    className="mt-2 w-max px-5 py-1.5 rounded-md font-semibold text-sm text-red-500 bg-white border border-red-500 cursor-not-allowed"
+                    disabled
+                  >
+                    Removed
+                  </button>
+                ) : getItemQuantity(d.id) > 0 ? (
                   <div className="mt-2 inline-flex items-center gap-3">
                     <div className="inline-flex items-center rounded-md border border-gray-200 overflow-hidden">
                       <button
@@ -202,6 +259,8 @@ function RestaurantPage() {
                 src={asset(d.image)}
                 alt={d.title}
                 className="h-24 w-28 object-cover rounded-md shadow-sm ml-2"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           ))}
